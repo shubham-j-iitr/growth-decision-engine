@@ -321,13 +321,12 @@ def _reset_application():
 
 
 def _scroll_to_top():
-    """Return the browser viewport to the top after a stage-changing rerun.
+    """Force the Streamlit main scroll container back to the top.
 
-    Streamlit reruns the Python script in the same browser session, so the
-    browser can preserve the previous scroll position when the UI changes
-    from Data Input to the Decision Cockpit. The small HTML component below
-    intentionally targets the parent Streamlit document and retries briefly
-    while the new page is being rendered.
+    Streamlit can restore the previous scroll position after a stage-changing
+    rerun. The browser viewport is not always the element that owns the scroll,
+    so target the known Streamlit containers as well as document/window.
+    Repeated calls cover the period while the new dashboard DOM is mounting.
     """
     nonce = time.time_ns()
     st.components.v1.html(
@@ -336,9 +335,30 @@ def _scroll_to_top():
             // {nonce}
             function scrollGrowthEngineToTop() {{
                 try {{
+                    const parentDocument = window.parent.document;
+
+                    const selectors = [
+                        '[data-testid="stAppViewContainer"]',
+                        '[data-testid="stMain"]',
+                        '[data-testid="stMainBlockContainer"]',
+                        'main',
+                        'html',
+                        'body'
+                    ];
+
+                    selectors.forEach(function(selector) {{
+                        const element = parentDocument.querySelector(selector);
+                        if (element) {{
+                            element.scrollTop = 0;
+                            if (typeof element.scrollTo === 'function') {{
+                                element.scrollTo({{top: 0, left: 0, behavior: 'auto'}});
+                            }}
+                        }}
+                    }});
+
                     window.parent.scrollTo({{top: 0, left: 0, behavior: 'auto'}});
-                    window.parent.document.documentElement.scrollTop = 0;
-                    window.parent.document.body.scrollTop = 0;
+                    parentDocument.documentElement.scrollTop = 0;
+                    parentDocument.body.scrollTop = 0;
                 }} catch (error) {{
                     // Ignore browser sandbox differences; the app remains usable.
                 }}
@@ -346,8 +366,12 @@ def _scroll_to_top():
 
             scrollGrowthEngineToTop();
             setTimeout(scrollGrowthEngineToTop, 100);
-            setTimeout(scrollGrowthEngineToTop, 350);
+            setTimeout(scrollGrowthEngineToTop, 300);
             setTimeout(scrollGrowthEngineToTop, 700);
+            setTimeout(scrollGrowthEngineToTop, 1200);
+            setTimeout(scrollGrowthEngineToTop, 2000);
+            setTimeout(scrollGrowthEngineToTop, 3000);
+            setTimeout(scrollGrowthEngineToTop, 5000);
         </script>
         """,
         height=0,
@@ -573,11 +597,9 @@ if not st.session_state.get("analysis_started", False):
 # ============================================================
 
 # At this point analysis_started can only be true after validation passed.
-# A stage-changing rerun should open the Decision Cockpit at the top rather
-# than inheriting the user's previous scroll position on the Data Input view.
-if st.session_state.pop("scroll_to_top", False):
-    _scroll_to_top()
-
+# Keep the transition flag alive until the complete dashboard has rendered.
+# A final scroll reset is issued at the end of this script so Streamlit cannot
+# restore the old Data Input scroll position after the new DOM is mounted.
 data = st.session_state["input_data"]
 validation = st.session_state["input_validation"]
 
@@ -1164,13 +1186,11 @@ opu_gap = safe_float(
         "opu_gap_pct",
         latest.get("opu_plan_variance_pct", 0),
     )
-)
 arpu_gap = safe_float(
     latest_diagnosis.get(
         "arpu_gap_pct",
         latest.get("arpu_plan_variance_pct", 0),
     )
-)
 
 drivers = diagnosis.get("drivers", [])
 evidence = diagnosis.get("evidence", [])
@@ -2021,3 +2041,13 @@ with tab_quality:
         "Critical structural validation failures should stop "
         "downstream analysis."
     )
+
+
+# ============================================================
+# FINAL VIEWPORT RESET
+# ============================================================
+# This must run after the complete analysis page has been rendered.
+# Calling it here avoids Streamlit restoring the previous Data Input
+# scroll position after the dashboard DOM is mounted.
+if st.session_state.pop("scroll_to_top", False):
+    _scroll_to_top()
