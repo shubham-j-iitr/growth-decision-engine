@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import re
+import time
 import zipfile
 from pathlib import Path
 
@@ -314,8 +315,43 @@ def _reset_application():
         "input_validation",
         "analysis_started",
         "ai_result",
+        "scroll_to_top",
     ]:
         st.session_state.pop(key, None)
+
+
+def _scroll_to_top():
+    """Return the browser viewport to the top after a stage-changing rerun.
+
+    Streamlit reruns the Python script in the same browser session, so the
+    browser can preserve the previous scroll position when the UI changes
+    from Data Input to the Decision Cockpit. The small HTML component below
+    intentionally targets the parent Streamlit document and retries briefly
+    while the new page is being rendered.
+    """
+    nonce = time.time_ns()
+    st.components.v1.html(
+        f"""
+        <script>
+            // {nonce}
+            function scrollGrowthEngineToTop() {{
+                try {{
+                    window.parent.scrollTo({{top: 0, left: 0, behavior: 'auto'}});
+                    window.parent.document.documentElement.scrollTop = 0;
+                    window.parent.document.body.scrollTop = 0;
+                }} catch (error) {{
+                    // Ignore browser sandbox differences; the app remains usable.
+                }}
+            }}
+
+            scrollGrowthEngineToTop();
+            setTimeout(scrollGrowthEngineToTop, 100);
+            setTimeout(scrollGrowthEngineToTop, 350);
+            setTimeout(scrollGrowthEngineToTop, 700);
+        </script>
+        """,
+        height=0,
+    )
 
 
 def _status_icon(status: str) -> str:
@@ -519,6 +555,7 @@ def _render_data_input():
 
             if st.button("Run Growth Analysis", type="primary", use_container_width=True):
                 st.session_state["analysis_started"] = True
+                st.session_state["scroll_to_top"] = True
                 st.rerun()
 
     if data and st.button("Reset Data & Start Again", use_container_width=True):
@@ -536,6 +573,11 @@ if not st.session_state.get("analysis_started", False):
 # ============================================================
 
 # At this point analysis_started can only be true after validation passed.
+# A stage-changing rerun should open the Decision Cockpit at the top rather
+# than inheriting the user's previous scroll position on the Data Input view.
+if st.session_state.pop("scroll_to_top", False):
+    _scroll_to_top()
+
 data = st.session_state["input_data"]
 validation = st.session_state["input_validation"]
 
