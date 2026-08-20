@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from engine.decision_engine import (
+    _driver_attribution,
     build_decision_package,
     prioritise_initiatives,
 )
@@ -118,3 +119,23 @@ def test_high_revenue_but_weakly_aligned_initiative_does_not_automatically_win()
     assert ranked.loc[
         ranked["initiative"] == "Large Acquisition Bet", "evidence_alignment_score"
     ].iloc[0] < ranked.iloc[0]["evidence_alignment_score"]
+
+
+def test_above_plan_acquisition_has_positive_revenue_attribution():
+    data, kpi_analysis, _ = build_package()
+
+    attribution = _driver_attribution(kpi_analysis["weekly"].iloc[-1])
+    acquisition = next(
+        item for item in attribution if item["driver"] == "Acquisition / MAU"
+    )
+
+    # Demo W12 MAU is above plan, so acquisition cannot be a negative
+    # revenue driver. The attribution must also preserve the revenue-gap
+    # reconciliation across all three multiplicative drivers.
+    assert acquisition["gap_pct"] > 0
+    assert acquisition["revenue_impact"] > 0
+
+    total_impact = sum(item["revenue_impact"] for item in attribution)
+    latest = kpi_analysis["weekly"].iloc[-1]
+    revenue_gap = latest["revenue"] - latest["revenue_plan"]
+    assert abs(total_impact - revenue_gap) < 1e-6
