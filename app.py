@@ -319,6 +319,57 @@ def _reset_application():
     ]:
         st.session_state.pop(key, None)
 
+def _scroll_to_top():
+    """Reset browser/Streamlit scroll position to the top."""
+    st.components.v1.html(
+        """
+        <script>
+        function scrollToTop() {
+            try {
+                const doc = window.parent.document;
+
+                const selectors = [
+                    '[data-testid="stAppViewContainer"]',
+                    '[data-testid="stMain"]',
+                    '[data-testid="stMainBlockContainer"]',
+                    'main',
+                    'html',
+                    'body'
+                ];
+
+                selectors.forEach(function(selector) {
+                    const element = doc.querySelector(selector);
+
+                    if (element) {
+                        element.scrollTop = 0;
+
+                        if (typeof element.scrollTo === "function") {
+                            element.scrollTo({
+                                top: 0,
+                                left: 0,
+                                behavior: "auto"
+                            });
+                        }
+                    }
+                });
+
+                window.parent.scrollTo(0, 0);
+
+            } catch (error) {
+                // Ignore browser sandbox errors.
+            }
+        }
+
+        scrollToTop();
+
+        setTimeout(scrollToTop, 100);
+        setTimeout(scrollToTop, 300);
+        setTimeout(scrollToTop, 700);
+        setTimeout(scrollToTop, 1200);
+        </script>
+        """,
+        height=0,
+    )
 
 def _scroll_to_top():
     """Return the browser viewport to the top after a stage-changing rerun.
@@ -575,6 +626,8 @@ if not st.session_state.get("analysis_started", False):
 # At this point analysis_started can only be true after validation passed.
 # A stage-changing rerun should open the Decision Cockpit at the top rather
 # than inheriting the user's previous scroll position on the Data Input view.
+
+
 if st.session_state.pop("scroll_to_top", False):
     _scroll_to_top()
 
