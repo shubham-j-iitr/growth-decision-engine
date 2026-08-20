@@ -117,17 +117,16 @@ def _driver_attribution(
             current[index] = actual_values[index]
             after = revenue_for(current)
             shapley[names[index]] += after - before
+            current_revenue = after
 
     for name in names:
         shapley[name] /= 6.0
 
-    revenue_gap = _safe(latest.get("revenue")) - _safe(latest.get("revenue_plan"))
-    attribution_total = sum(shapley.values())
-
-    # Align tiny rounding differences with the reported revenue gap.
-    if attribution_total and revenue_gap:
-        scale = revenue_gap / attribution_total
-        shapley = {name: value * scale for name, value in shapley.items()}
+    # Shapley attribution already satisfies the efficiency property:
+    # the driver contributions sum to Actual Revenue - Plan Revenue.
+    # Do not rescale the individual contributions by the signed revenue gap.
+    # Rescaling by a negative total gap would incorrectly flip a positive
+    # above-plan driver (e.g. MAU) into a negative revenue impact.
 
     result = []
     for name in names:
