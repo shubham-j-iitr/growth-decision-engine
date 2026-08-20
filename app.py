@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import io
 import re
-import time
 import zipfile
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from streamlit_scroll_to_top import scroll_to_here
 
 from engine.validation import (
     DATASET_CONFIG,
@@ -319,90 +319,6 @@ def _reset_application():
     ]:
         st.session_state.pop(key, None)
 
-def _scroll_to_top():
-    """Reset browser/Streamlit scroll position to the top."""
-    st.components.v1.html(
-        """
-        <script>
-        function scrollToTop() {
-            try {
-                const doc = window.parent.document;
-
-                const selectors = [
-                    '[data-testid="stAppViewContainer"]',
-                    '[data-testid="stMain"]',
-                    '[data-testid="stMainBlockContainer"]',
-                    'main',
-                    'html',
-                    'body'
-                ];
-
-                selectors.forEach(function(selector) {
-                    const element = doc.querySelector(selector);
-
-                    if (element) {
-                        element.scrollTop = 0;
-
-                        if (typeof element.scrollTo === "function") {
-                            element.scrollTo({
-                                top: 0,
-                                left: 0,
-                                behavior: "auto"
-                            });
-                        }
-                    }
-                });
-
-                window.parent.scrollTo(0, 0);
-
-            } catch (error) {
-                // Ignore browser sandbox errors.
-            }
-        }
-
-        scrollToTop();
-
-        setTimeout(scrollToTop, 100);
-        setTimeout(scrollToTop, 300);
-        setTimeout(scrollToTop, 700);
-        setTimeout(scrollToTop, 1200);
-        </script>
-        """,
-        height=0,
-    )
-
-def _scroll_to_top():
-    """Return the browser viewport to the top after a stage-changing rerun.
-
-    Streamlit reruns the Python script in the same browser session, so the
-    browser can preserve the previous scroll position when the UI changes
-    from Data Input to the Decision Cockpit. The small HTML component below
-    intentionally targets the parent Streamlit document and retries briefly
-    while the new page is being rendered.
-    """
-    nonce = time.time_ns()
-    st.components.v1.html(
-        f"""
-        <script>
-            // {nonce}
-            function scrollGrowthEngineToTop() {{
-                try {{
-                    window.parent.scrollTo({{top: 0, left: 0, behavior: 'auto'}});
-                    window.parent.document.documentElement.scrollTop = 0;
-                    window.parent.document.body.scrollTop = 0;
-                }} catch (error) {{
-                    // Ignore browser sandbox differences; the app remains usable.
-                }}
-            }}
-
-            scrollGrowthEngineToTop();
-            setTimeout(scrollGrowthEngineToTop, 100);
-            setTimeout(scrollGrowthEngineToTop, 350);
-            setTimeout(scrollGrowthEngineToTop, 700);
-        </script>
-        """,
-        height=0,
-    )
 
 
 def _status_icon(status: str) -> str:
@@ -626,10 +542,8 @@ if not st.session_state.get("analysis_started", False):
 # At this point analysis_started can only be true after validation passed.
 # A stage-changing rerun should open the Decision Cockpit at the top rather
 # than inheriting the user's previous scroll position on the Data Input view.
-
-
 if st.session_state.pop("scroll_to_top", False):
-    _scroll_to_top()
+    scroll_to_here(0, key="analysis_top")
 
 data = st.session_state["input_data"]
 validation = st.session_state["input_validation"]
