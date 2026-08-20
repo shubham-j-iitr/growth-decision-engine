@@ -1,0 +1,13 @@
+initiative,target_problem,target_segment,expected_order_uplift,expected_conversion_uplift,expected_revenue,implementation_effort,confidence,time_to_impact,cm_impact,risk,owner
+Personalised Win-back,Retention,Dormant,6.0,0.5,4200000,2,4,3,0.8,2,CRM/Growth
+Occasional User Re-engagement,Retention,Occasional,8.0,0.8,5600000,3,4,4,1.2,2,CRM/Growth
+Personalised Product Recommendations,Conversion,Regular,4.0,0.7,3100000,3,3,5,0.5,2,Product Growth
+Search Ranking Optimisation,Conversion,All,3.5,0.6,2700000,4,3,6,0.4,3,Search/Product
+Checkout Friction Reduction,Conversion,All,5.0,1.2,3900000,4,4,4,0.9,3,Checkout/Product
+Fulfilment Threshold Optimisation,Frequency,Occasional,4.5,0.5,3400000,3,3,4,-0.6,3,Commercial
+Basket Building Recommendations,AOV,Regular,3.0,0.2,2600000,3,4,5,0.3,2,Product Growth
+Cross-sell Recommendations,AOV,Power,2.5,0.2,1900000,3,3,6,0.2,2,Product Growth
+Targeted Promotion Optimisation,Monetisation,Occasional,5.0,0.4,3600000,3,3,3,-0.2,3,Commercial
+New User Onboarding,Retention,New Users,4.0,0.6,3000000,4,3,6,0.4,3,Lifecycle Growth
+Subscription Adoption,Frequency,Regular,4.5,0.5,3500000,4,3,8,-0.5,4,Commercial/Product
+Product Availability Improvement,Conversion,All,5.5,1.0,4300000,5,4,8,1.0,4,Operations
